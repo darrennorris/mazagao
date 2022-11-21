@@ -143,7 +143,7 @@ maza_ponto <- sf::st_read(meuSIG, layer = "maza_ponto")
 Visualizar as camadas
 
 ```{r}
-  mapview::mapview(maza_buffers, z="dist_km", burst = TRUE) + 
+  mapview::mapview(maza_buffers, z="dist_km") + 
   mapview::mapview(maza_ponto, col.regions= "black") 
 
 ```
@@ -317,7 +317,7 @@ Além disso, como os resultados ficaram na tabela de atributos podemos também v
 
 ```{r}
 buffer_line <- st_cast(resultados, 'LINESTRING')
-mapview::mapview(buffer_line, zcol="value", 
+mapview::mapview(buffer_line, zcol="value", lwd = 8,
                   popup = popupTable(buffer_line, 
                                      zcol = c("dist_km", 
                                               "metric", 
