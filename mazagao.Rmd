@@ -96,6 +96,7 @@ library(terra)
 library(tmap)
 library(gridExtra)
 library(kableExtra)
+library(leafpop)
 library(mapview)
 library(mgcv)
 ```
@@ -142,7 +143,7 @@ maza_ponto <- sf::st_read(meuSIG, layer = "maza_ponto")
 Visualizar as camadas
 
 ```{r}
-  mapview::mapview(maza_buffers, z="dist_km") + 
+  mapview::mapview(maza_buffers, z="dist_km", burst = TRUE) + 
   mapview::mapview(maza_ponto, col.regions= "black") 
 
 ```
@@ -186,21 +187,27 @@ Plotar para verificar, incluindo nomes e os cores para classes de floresta (valo
 ```{r, eval = FALSE}
 # Passo necessario para agilizar o processamento
 floresta_2020_modal<-aggregate(floresta_2020, fact=10, fun="modal")
-# Plot
+
+# Mapa
 tm_shape(floresta_2020_modal) +
   tm_raster(style = "cat", 
             palette = c("0" = "#E974ED", "1" ="#129912"), legend.show = FALSE) + 
   tm_add_legend(type = "fill", labels = c("não-floresta", "floresta"),
     col = c("#E974ED", "#129912"), title = "Classe") + 
-tm_shape(br156_points) + 
+tm_shape(maza_ponto) + 
   tm_dots(size = 0.2, col = "yellow") + 
+  tm_shape(maza_buffers) + 
+    tm_borders(col = "white", lwd = 2.5) +
+tm_shape(maza_buffers) + 
+    tm_borders(col = "black", lwd = 2, lty = "dashed") + 
+tm_scale_bar(breaks = c(0, 20, 40), text.size = 1, 
+             position=c("right", "bottom")) +
 tm_layout(legend.bg.color="white")
-tm_layout(legend.bg.color = "white") 
 ```
 
 Se esta todo certo, voces devem ter uma imagem assim:
 
-```{r, echo = FALSE, message=FALSE, warning=FALSE, fig.width=5, fig.height=5, fig.cap="MapBiomas 2020 reclassificado em floresta e não-floresta."}
+```{r, echo = FALSE, message=FALSE, warning=FALSE, fig.width=5, fig.height=5, fig.cap="MapBiomas 2020 reclassificado em floresta e não-floresta. Linhas tracejadas representam buffers em torno do centro de Mazagão, com raios de 250, 500, 1000, 2000, 4000, 8000, 16000 e 32000 metros."}
 # Passo necessario para agilizar o processamento
 floresta_2020_modal<-aggregate(floresta_2020, fact=10, fun="modal")
 # Plot
@@ -214,7 +221,9 @@ tm_shape(maza_ponto) +
   tm_shape(maza_buffers) + 
     tm_borders(col = "white", lwd = 2.5) +
 tm_shape(maza_buffers) + 
-    tm_borders(col = "black", lwd = 2, lty = "dashed") +
+    tm_borders(col = "black", lwd = 2, lty = "dashed") + 
+tm_scale_bar(breaks = c(0, 20, 40), text.size = 1, 
+             position=c("right", "bottom")) +
 tm_layout(legend.bg.color="white")
   
 ```
@@ -256,7 +265,7 @@ minha_amostra_250 %>%
 
 ### Distâncias variados, métrica única
 
-Aqui no exmplo vamos quantificar a mesma metrica para 8 distancias diferentes.
+Aqui no exmplo vamos quantificar a mesma métrica para 8 distancias diferentes.
 Usando buffer com extensões diferentes de 250, 500, 1000, 2000, 4000, 8000, 
 16000 e 32000 metros distantes.
 
@@ -270,15 +279,27 @@ minha_metrica <- sample_lsm(landscape = floresta_2020,
                             edge_depth = 1) 
 ```
 
-### Grafico
+### Gráfico
+
+Antes de apresentar os resultados, precisamos primeiramente organizar os dados. 
+Os dados de entrada eram no objeto "maza_buffers", formato vetor (polígonos). O formato de vetor tem uma tabela de atributos e precisamos acrescentar os valores da métrica (no objeto "minha_metrica") associado com cada polígono (buffer) para apresentar e analisar os resultados.
+
+Escolhendo a classe de floresta através de um filtro e selecionando as colunas desejadas e colocando-as na sequência desejada ("select"), usando a função "left_join" para adicionar as métricas aos buffers.
+
 
 ```{r}
 # Organizar dados
 resultados <- maza_buffers %>% 
   left_join(minha_metrica %>% dplyr::filter(class==1) %>% 
               dplyr::select(plot_id, class, metric, value), 
-            by=c("dist_km"="plot_id"))
-# Plot
+            by=c("dist_km"="plot_id")) %>% 
+  mutate(value = round(value,2))
+
+```
+
+Agora, usando o codigo a seguir podemos visualizar os resultados em um gráfico......
+```{r}
+# Gráfico
 resultados %>% 
 ggplot(aes(x=dist_km, y=value)) + 
   geom_point() + 
@@ -290,3 +311,18 @@ ggplot(aes(x=dist_km, y=value)) +
   
 ```
 
+
+Além disso, como os resultados ficaram na tabela de atributos podemos também visualizar em um mapa .......
+
+
+```{r}
+buffer_line <- st_cast(resultados, 'LINESTRING')
+mapview::mapview(buffer_line, zcol="value", 
+                  popup = popupTable(buffer_line, 
+                                     zcol = c("dist_km", 
+                                              "metric", 
+                                              "value")) 
+                  ) +  
+mapview::mapview(maza_ponto, col.regions= "black")
+
+```
