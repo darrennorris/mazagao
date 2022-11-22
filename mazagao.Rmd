@@ -229,6 +229,41 @@ tm_layout(legend.bg.color="white")
 ```
 
 
+## Dados: IBGE
+
+Disonivel para cada municipio.
+
+```{r}
+# IBGE 
+# Geral https://cidades.ibge.gov.br/brasil/ap/mazagao/panorama
+# IBGE SIDRA  https://sidra.ibge.gov.br/pesquisa/censo-demografico/series-temporais/series-temporais/
+# Censo: Tabela 136; 1996 = Tabela 475; e 2007 = Tabela 793.
+censo_pop <- c(8894,	11353, 11986, 13862, 17032)
+censo_ano <- c(1991, 1996, 2000, 2007, 2010)
+df_censo <- data.frame(tipo = "censo", ano = censo_ano, pop = censo_pop)
+
+# Estimativas anuais IBGE SIDRA Tabela 6579
+est_pop <- c(12410,	12633,	12933,	13139,	13913,	14259,	14418,	14655,	17420,	17794,	18739,	19157,	19571,	19981,	20387,	21206,	21632,	22053,	22468)
+est_ano <- c(2001,	2002,	2003,	2004,	2005,	2006,	2008,	2009,	2011,	2012,	2013,	2014,	2015,	2016,	2017,	2018,	2019,	2020,	2021)
+df_est <- data.frame(tipo = "estimativa", ano = est_ano, pop = est_pop)
+
+# Calcular densidade demográfica
+df_pop <- bind_rows(df_censo, df_est) %>% 
+  mutate(pop_dens_km2 = pop/13294.78) %>% arrange(ano)
+
+# Vizualizar
+
+df_pop %>% 
+  ggplot(aes(x=ano, y=pop_dens_km2)) + 
+  geom_point(aes(shape=tipo)) + 
+  stat_smooth(method = "gam") + 
+  labs(title = "População residente em Mazagão", 
+       y = "Densidade demográfica (hab/km²)", 
+       x = "Ano")
+```
+
+
+
 # Métricas da paisagem e pacote "landscapemetrics"
 
 ## Calculo de métricas
