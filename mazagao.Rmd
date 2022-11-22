@@ -255,7 +255,7 @@ df_pop <- bind_rows(df_censo, df_est) %>%
 
 df_pop %>% 
   ggplot(aes(x=ano, y=pop_dens_km2)) + 
-  geom_point(aes(shape=tipo)) + 
+  geom_point(aes(shape=tipo), size = 4) + 
   stat_smooth(method = "gam") + 
   labs(title = "População residente em Mazagão", 
        y = "Densidade demográfica (hab/km²)", 
