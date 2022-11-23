@@ -1,5 +1,5 @@
-# mazagao
-Mudanças na paisagem no município de Mazagão. 
+# Mazagão
+Mudanças na paisagem no município de Mazagão. Dados e código de R usados no tutorial: [https://rpubs.com/darren75/mazagao](https://rpubs.com/darren75/mazagao)
 
 ## Conteúdo
 
