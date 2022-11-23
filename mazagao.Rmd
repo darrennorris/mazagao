@@ -369,7 +369,7 @@ minha_metrica <- sample_lsm(landscape = floresta_2020,
                             edge_depth = 1) 
 ```
 
-### Gráfico
+# Gráficos
 
 Antes de apresentar os resultados, precisamos primeiramente organizar os dados. 
 Os dados de entrada eram no objeto "maza_buffers", formato vetor (polígonos). O formato de vetor tem uma tabela de atributos e precisamos acrescentar os valores da métrica (no objeto "minha_metrica") associado com cada polígono (buffer) para apresentar e analisar os resultados.
@@ -402,7 +402,7 @@ ggplot(aes(x=dist_km, y=value)) +
 ```
 
 
-Além disso, como os resultados ficaram na tabela de atributos podemos também visualizar em um mapa .......
+Além disso, como os resultados ficaram na tabela de atributos podemos também visualizar em um mapa, neste caso um mapa interativa .......
 
 
 ```{r}
@@ -453,7 +453,7 @@ resultados_anos %>%
   mutate(ext_km = (2*dist_km)) %>%
 # fazer grafico
   ggplot(aes(x=ano, y=value)) + 
-  stat_smooth(linetype="dashed") +
+  stat_smooth(linetype="dashed", colour = "magenta") +
   geom_point(aes(group=ext_km, colour = factor(ext_km))) + 
   geom_line(aes(group=ext_km, colour = factor(ext_km))) +
   scale_color_viridis_d("extensão\n(quilômetros)") +
@@ -465,4 +465,23 @@ resultados_anos %>%
 
 ```
 
+Gráfico alternativa.
 
+```{r , warning=FALSE, message=FALSE}
+resultados_anos %>%
+  mutate(ext_km = (2*dist_km)) %>%
+# fazer grafico
+  ggplot(aes(x=ext_km, y=value)) + 
+  stat_smooth(method="gam", 
+              formula = y ~ s(x, bs = "cs", k=5), 
+              linetype="dashed", colour = "magenta") +
+  geom_point(aes(group=ano, colour = factor(ano))) + 
+  geom_line(aes(group=ano, colour = factor(ano))) +
+  scale_color_viridis_d("ano") +
+  facet_wrap(~metric, scales = "free_y") +
+  labs(title = "Comparação multiescala de várias métricas",
+    x = "extensão (quilômetros)", 
+    y = "metric value") + 
+  theme_bw() + theme(legend.position="top")
+
+```
