@@ -229,6 +229,61 @@ tm_layout(legend.bg.color="white")
 ```
 
 
+Vamos repetir o mesmo processo para carregar arquivos de mais anos 
+(1985 e 2005).
+Baixar os arquivos link: [https://github.com/darrennorris/mazagao/blob/main/raster/AP_utm_munis_maza_santana/utm_cover_AP_munis_maza_santana_1985.tif](https://github.com/darrennorris/mazagao/blob/main/raster/AP_utm_munis_maza_santana/utm_cover_AP_munis_maza_santana_1985.tif){target="_blank"} 
+
+[https://github.com/darrennorris/mazagao/blob/main/raster/AP_utm_munis_maza_santana/utm_cover_AP_munis_maza_santana_2005.tif](https://github.com/darrennorris/mazagao/blob/main/raster/AP_utm_munis_maza_santana/utm_cover_AP_munis_maza_santana_2005.tif){target="_blank"} 
+Lembrando-se de salvar o arquivos ("utm_cover_AP_munis_maza_santana_1985.tif" e 
+"utm_cover_AP_munis_maza_santana_2005.tif") em um local conhecido no seu computador.
+
+```{r eval=FALSE, echo=TRUE, message=FALSE, warning=FALSE}
+# Selecionar e carregar arquivo "utm_cover_AP_munis_maza_santana_1985.tif"
+mapbiomas_1985 <- rast(file.choose())
+# Reclassificação - criar uma nova camada de floresta
+floresta_1985 <- mapbiomas_1985
+# Com valor de 0
+values(floresta_1985 <- 0
+# Atualizar categorias florestais agrupados com valor de 1
+# Juntando Formação Florestal, Formação Savânica, Mangue na mesma classe = 1
+floresta_1985[mapbiomas_1985==3 | mapbiomas_1985==4 | mapbiomas_1985==5] <- 1 
+
+# Selecionar e carregar arquivo "utm_cover_AP_munis_maza_santana_2005.tif"
+mapbiomas_2005 <- rast(file.choose())
+# Reclassificação - criar uma nova camada de floresta
+floresta_2005 <- mapbiomas_2005
+# Com valor de 0
+values(floresta_2005 <- 0
+# Atualizar categorias florestais agrupados com valor de 1
+# Juntando Formação Florestal, Formação Savânica, Mangue na mesma classe = 1
+floresta_2005[mapbiomas_2005==3 | mapbiomas_2005==4 | mapbiomas_2005==5] <- 1
+
+```
+
+```{r, echo=FALSE}
+rin <- "raster/AP_utm_munis_maza_santana/utm_cover_AP_munis_maza_santana_1985.tif"
+mapbiomas_1985 <- rast(rin)
+# Reclassificação - criar uma nova camada de floresta
+floresta_1985 <- mapbiomas_1985
+# Com valor de 0
+values(floresta_1985) <- 0
+# Atualizar categorias florestais agrupados com valor de 1
+# Juntando Formação Florestal, Formação Savânica, Mangue na mesma classe = 1
+floresta_1985[mapbiomas_1985==3 | mapbiomas_1985==4 | mapbiomas_1985==5] <- 1 
+
+rin <- "raster/AP_utm_munis_maza_santana/utm_cover_AP_munis_maza_santana_2005.tif"
+mapbiomas_2005 <- rast(rin)
+# Reclassificação - criar uma nova camada de floresta
+floresta_2005 <- mapbiomas_2005
+# Com valor de 0
+values(floresta_2005) <- 0
+# Atualizar categorias florestais agrupados com valor de 1
+# Juntando Formação Florestal, Formação Savânica, Mangue na mesma classe = 1
+floresta_2005[mapbiomas_2005==3 | mapbiomas_2005==4 | mapbiomas_2005==5] <- 1 
+```
+
+
+
 ## Dados: IBGE
 
 Disonivel para cada municipio.
@@ -361,3 +416,53 @@ mapview::mapview(buffer_line, zcol="value", lwd = 8,
 mapview::mapview(maza_ponto, col.regions= "black")
 
 ```
+
+Agora vamos repetir o mesmo process para varios anos e tres métricas.
+
+```{r}
+# Objeto com os nomes das funções para calcular as métricas desejadas.
+minhas_metricas <- c("lsm_c_cpland", 
+                     "lsm_c_enn_mn", "lsm_c_enn_sd", "lsm_c_enn_cv", 
+                     "lsm_c_pd")
+# Objeto com o mesmo paisagem em anos diferentes.
+floresta_anos <- c(floresta_1985, floresta_2005, floresta_2020)
+
+# Metricás para as distancias
+minha_metricas_anos <- sample_lsm(landscape = floresta_anos, 
+                                 y = maza_buffers, 
+                                 plot_id = data.frame(maza_buffers)[, 'dist_km'],
+                            what = minhas_metricas, 
+                            edge_depth = 1) 
+
+# Organizar dados
+resultados_anos <- maza_buffers %>% 
+  left_join(minha_metricas_anos %>% dplyr::filter(class==1) %>% 
+              dplyr::mutate(value = round(value,2), 
+         ano = case_when(layer==1 ~1985, 
+                         layer==2~2005, 
+                         layer==3~2020)) %>%
+              dplyr::select(ano, plot_id, class, metric, value), 
+            by=c("dist_km"="plot_id"))
+
+```
+
+Grafico.
+
+```{r , warning=FALSE, message=FALSE}
+resultados_anos %>%
+  mutate(ext_km = (2*dist_km)) %>%
+# fazer grafico
+  ggplot(aes(x=ano, y=value)) + 
+  stat_smooth(linetype="dashed") +
+  geom_point(aes(group=ext_km, colour = factor(ext_km))) + 
+  geom_line(aes(group=ext_km, colour = factor(ext_km))) +
+  scale_color_viridis_d("extensão\n(quilômetros)") +
+  facet_wrap(~metric, scales = "free_y") +
+  labs(title = "Comparação multiescala de várias métricas",
+    x = "ano", 
+    y = "metric value") + 
+  theme_bw() + theme(legend.position="top")
+
+```
+
+
